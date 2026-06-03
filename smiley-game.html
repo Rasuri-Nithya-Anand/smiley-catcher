@@ -7,35 +7,88 @@
     body {
       font-family: 'Comic Sans MS', cursive, sans-serif;
       text-align: center;
-      background-color: #f0f8ff;
+      background: radial-gradient(circle at top, #8fd8ff 0%, #15406d 40%, #021f3f 100%);
+      color: #f9f5ef;
       margin: 0;
       padding: 20px;
       overflow-x: hidden;
+      min-height: 100vh;
+      position: relative;
+    }
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background-image: radial-gradient(circle, rgba(255,255,255,0.95) 1px, transparent 1px), radial-gradient(circle, rgba(255,255,255,0.65) 1px, transparent 1px);
+      background-size: 45px 45px, 80px 80px;
+      animation: drift 20s linear infinite;
+      opacity: 0.22;
+      pointer-events: none;
+      z-index: 0;
+    }
+    @keyframes drift {
+      from { transform: translateY(-60px); }
+      to { transform: translateY(60px); }
     }
     h1 {
-      color: #ff6b6b;
-      text-shadow: 2px 2px 4px #ccc;
+      color: #fff;
+      text-shadow: 3px 3px 6px rgba(0,0,0,0.35);
+      margin-bottom: 8px;
     }
     #game-area {
       width: 100%;
-      height: 400px;
-      border: 3px dashed #4CAF50;
-      border-radius: 15px;
+      max-width: 900px;
+      height: 430px;
+      border: 3px dashed #f7f0e5;
+      border-radius: 25px;
       position: relative;
       overflow: hidden;
-      background-color: #e6f9ff;
+      background: linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.04));
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
       margin: 20px auto;
+      z-index: 1;
     }
     .smiley {
       position: absolute;
-      font-size: 40px;
+      font-size: 44px;
       cursor: pointer;
       user-select: none;
       animation: bounce 0.4s infinite alternate;
       transition: transform 0.1s;
+      text-shadow: 1px 1px 3px rgba(0,0,0,0.3);
+    }
+    #santa-deer {
+      position: absolute;
+      top: 12px;
+      left: -180px;
+      font-size: 56px;
+      z-index: 2;
+      pointer-events: none;
+      animation: santaRide 18s linear infinite;
+      filter: drop-shadow(0 0 12px rgba(255,255,255,0.85));
     }
     .explosion {
       animation: explode 0.3s forwards;
+    }
+    @keyframes santaRide {
+      0% {
+        left: -180px;
+        opacity: 0;
+      }
+      10% {
+        opacity: 1;
+      }
+      80% {
+        left: calc(100vw + 180px);
+        opacity: 1;
+      }
+      90% {
+        opacity: 0;
+      }
+      100% {
+        left: -180px;
+        opacity: 0;
+      }
     }
     @keyframes bounce {
       from { transform: translateY(0); }
@@ -48,20 +101,35 @@
     #score, #high-score, #timer, #streak {
       font-size: 20px;
       margin: 8px;
-      color: #333;
+      color: #f7f0e5;
+      text-shadow: 1px 1px 3px rgba(0,0,0,0.3);
+    }
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+      margin: 12px auto;
+      max-width: 940px;
+      z-index: 1;
+      position: relative;
     }
     button {
-      background-color: #4CAF50;
+      background: linear-gradient(145deg, #c62828 0%, #2e7d32 100%);
       color: white;
-      border: none;
-      padding: 10px 20px;
+      border: 2px solid rgba(255,255,255,0.55);
+      padding: 12px 24px;
       font-size: 16px;
-      border-radius: 10px;
+      border-radius: 15px;
       cursor: pointer;
       margin: 5px;
+      box-shadow: 0 8px 18px rgba(0,0,0,0.2);
+      transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
     }
     button:hover {
-      background-color: #388E3C;
+      transform: translateY(-2px);
+      filter: brightness(1.08);
+      box-shadow: 0 10px 20px rgba(0,0,0,0.3);
     }
     #flash {
       position: fixed;
@@ -106,15 +174,18 @@
 </head>
 <body>
 
-<h1>😃 Smiley Catcher Mania 🎯</h1>
+<div id="santa-deer">🦌🎅</div>
+<h1>🎄 Smiley Catcher Christmas Cheer 🎅</h1>
 <div id="score">Score: 0</div>
 <div id="high-score">High Score: 0</div>
 <div id="timer">Time Left: 45s</div>
 <div id="streak">Catch Streak: 0</div>
-<button onclick="startGame()">▶ Start Game</button>
-<button onclick="toggleMusic(event)">🎵 Music On</button>
-<button onclick="toggleSoundEffects(event)">🔊 Sound Effects</button>
-<button onclick="toggleLeaderboard()">🏆 Leaderboard</button>
+<div class="controls">
+  <button onclick="startGame()">▶ Start Game</button>
+  <button onclick="toggleMusic(event)">🎵 Music On</button>
+  <button onclick="toggleSoundEffects(event)">🔊 Sound Effects</button>
+  <button onclick="toggleLeaderboard()">🏆 Leaderboard</button>
+</div>
 <div id="game-area"></div>
 <div id="flash"></div>
 
