@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Smiley Catcher Game 🎯</title>
+  <style>
+    body {
+      font-family: 'Comic Sans MS', cursive, sans-serif;
+      text-align: center;
+      background-color: #f0f8ff;
+      margin: 0;
+      padding: 20px;
+      overflow-x: hidden;
+    }
+    h1 {
+      color: #ff6b6b;
+      text-shadow: 2px 2px 4px #ccc;
+    }
+    #game-area {
+      width: 100%;
+      height: 400px;
+      border: 3px dashed #4CAF50;
+      border-radius: 15px;
+      position: relative;
+      overflow: hidden;
+      background-color: #e6f9ff;
+      margin: 20px auto;
+    }
+    .smiley {
+      position: absolute;
+      font-size: 40px;
+      cursor: pointer;
+      user-select: none;
+      animation: bounce 0.4s infinite alternate;
+      transition: transform 0.1s;
+    }
+    .explosion {
+      animation: explode 0.3s forwards;
+    }
+    @keyframes bounce {
+      from { transform: translateY(0); }
+      to { transform: translateY(-10px); }
+    }
+    @keyframes explode {
+      0% { transform: scale(1); opacity: 1; }
+      100% { transform: scale(2); opacity: 0; }
+    }
+    #score, #high-score, #timer, #streak {
+      font-size: 20px;
+      margin: 8px;
+      color: #333;
+    }
+    button {
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      font-size: 16px;
+      border-radius: 10px;
+      cursor: pointer;
+      margin: 5px;
+    }
+    button:hover {
+      background-color: #388E3C;
+    }
+    #flash {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: white;
+      opacity: 0;
+      z-index: 999;
+      pointer-events: none;
+    }
+    #leaderboard {
+      display: none;
+      max-width: 400px;
+      margin: 20px auto;
+      background-color: #fff;
+      border: 2px solid #4CAF50;
+      border-radius: 15px;
+      padding: 15px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      animation: fadeIn 0.5s ease-in-out;
+    }
+    #leaderboard.show {
+      display: block;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    #leaderboard h2 {
+      color: #4CAF50;
+    }
+    #leaderboard-list {
+      list-style: none;
+      padding: 0;
+    }
+    #leaderboard-list li {
+      padding: 4px 0;
+      font-size: 16px;
+      text-align: left;
+    }
+  </style>
+</head>
+<body>
+
+<h1>😃 Smiley Catcher Mania 🎯</h1>
+<div id="score">Score: 0</div>
+<div id="high-score">High Score: 0</div>
+<div id="timer">Time Left: 45s</div>
+<div id="streak">Catch Streak: 0</div>
+<button onclick="startGame()">▶ Start Game</button>
+<button onclick="toggleMusic(event)">🎵 Music On</button>
+<button onclick="toggleSoundEffects(event)">🔊 Sound Effects</button>
+<button onclick="toggleLeaderboard()">🏆 Leaderboard</button>
+<div id="game-area"></div>
+<div id="flash"></div>
+
+<div id="leaderboard">
+  <h2>🏆 Top 20 Players</h2>
+  <ol id="leaderboard-list"></ol>
+</div>
+
+<!-- Audio Effects -->
+<audio id="click-sound" src="https://www.soundjay.com/buttons/sounds/button-09.mp3"></audio>
+<audio id="gameover-sound" src="https://www.soundjay.com/misc/sounds/fail-trombone-01.mp3"></audio>
+<audio id="bg-music" src="https://www.bensound.com/bensound-music/bensound-littleidea.mp3" loop></audio>
+
+<script>
+const gameArea = document.getElementById("game-area");
+const scoreDisplay = document.getElementById("score");
+const highScoreDisplay = document.getElementById("high-score");
+const timerDisplay = document.getElementById("timer");
+const streakDisplay = document.getElementById("streak");
+const clickSound = document.getElementById("click-sound");
+const gameOverSound = document.getElementById("gameover-sound");
+const bgMusic = document.getElementById("bg-music");
+const flash = document.getElementById("flash");
+
+const smileys = ['😀', '😃', '😄', '😁', '😆', '😅', '🤣', '😎', '🥳', '🤪', ];
+const colors = ['#FF5252', '#FFD740', '#69F0AE', '#40C4FF', '#E040FB'];
+
+let score = 0, highScore = 0, timeLeft = 45;
+let gameInterval, timerInterval;
+let isRunning = false;
+let smileySpeed = 10000;
+let streak = 0;
+let musicOn = true;
+let soundEffectsOn = true;
+
+// Ensure "Chintu" is always on leaderboard
+let lb = JSON.parse(localStorage.getItem("leaderboard")) || [];
+if (!lb.find(entry => entry.name === "Chintu")) {
+  lb.push({ name: "Chintu", score: 1000 });
+  localStorage.setItem("leaderboard", JSON.stringify(lb));
+}
+
+function startGame() {
+  if (isRunning) return;
+  score = 0;
+  streak = 0;
+  timeLeft = 45;
+  smileySpeed = 1000;
+  isRunning = true;
+  gameArea.innerHTML = '';
+  updateUI();
+  if (musicOn) bgMusic.play();
+  gameInterval = setInterval(spawnSmiley, smileySpeed);
+  timerInterval = setInterval(() => {
+    timeLeft--;
+    updateUI();
+    if (timeLeft <= 0) endGame();
+    if (timeLeft % 5 === 0 && smileySpeed > 300) {
+      clearInterval(gameInterval);
+      smileySpeed -= 100;
+      gameInterval = setInterval(spawnSmiley, smileySpeed);
+    }
+  }, 1000);
+}
+
+function endGame() {
+  clearInterval(gameInterval);
+  clearInterval(timerInterval);
+  isRunning = false;
+
+  let playerName = localStorage.getItem("playerName") || prompt("Enter your name to save your score:", "Player");
+  if (!playerName) playerName = "Player";
+  localStorage.setItem("playerName", playerName);
+
+  let lb = JSON.parse(localStorage.getItem("leaderboard")) || [];
+  lb.push({ name: playerName, score });
+  lb.sort((a, b) => b.score - a.score);
+  if (lb.length > 20) lb = lb.slice(0, 20);
+  localStorage.setItem("leaderboard", JSON.stringify(lb));
+
+  if (score > highScore) {
+    highScore = score;
+    localStorage.setItem("smileyHighScore", highScore);
+  }
+
+  if (soundEffectsOn) gameOverSound.play();
+  gameArea.innerHTML = `
+    <h2 style="margin-top:100px; color:#f44336;">🎉 Game Over! Final Score: ${score}</h2>
+    <button onclick="startGame()">🔁 Play Again</button>
+    <button onclick="shareScore(${score})">📤 Share My Score</button>
+  `;
+}
+
+function updateUI() {
+  scoreDisplay.textContent = `Score: ${score}`;
+  highScore = parseInt(localStorage.getItem("smileyHighScore"), 10) || 0;
+  highScoreDisplay.textContent = `High Score: ${highScore}`;
+  timerDisplay.textContent = `Time Left: ${timeLeft}s`;
+  streakDisplay.textContent = `Catch Streak: ${streak}`;
+}
+
+function spawnSmiley() {
+  const smiley = document.createElement("div");
+  smiley.className = "smiley";
+  smiley.textContent = smileys[Math.floor(Math.random() * smileys.length)];
+  smiley.style.left = Math.random() * (gameArea.clientWidth - 40) + "px";
+  smiley.style.top = Math.random() * (gameArea.clientHeight - 40) + "px";
+  smiley.style.color = colors[Math.floor(Math.random() * colors.length)];
+
+  smiley.onclick = () => {
+    score++;
+    streak++;
+    if (streak % 5 === 0) {
+      score += 5;
+    }
+    flashScreen();
+    if (soundEffectsOn) clickSound.play();
+    smiley.classList.add("explosion");
+    setTimeout(() => smiley.remove(), 300);
+    updateUI();
+  };
+
+  setTimeout(() => {
+    if (gameArea.contains(smiley)) {
+      streak = 0;
+      smiley.remove();
+      updateUI();
+    }
+  }, 2000);
+
+  gameArea.appendChild(smiley);
+}
+
+function toggleMusic(event) {
+  const btn = event.currentTarget || event.target;
+  if (musicOn) {
+    bgMusic.pause();
+    btn.textContent = "🔇 Music Off";
+  } else {
+    bgMusic.play();
+    btn.textContent = "🎵 Music On";
+  }
+  musicOn = !musicOn;
+}
+
+function toggleSoundEffects(event) {
+  const btn = event.currentTarget || event.target;
+  if (soundEffectsOn) {
+    btn.textContent = "🔇 Sound Effects Off";
+    alert("Sound Effects turned OFF! 🔇");
+  } else {
+    btn.textContent = "🔊 Sound Effects";
+    alert("Sound Effects turned ON! 🔊");
+  }
+  soundEffectsOn = !soundEffectsOn;
+}
+
+function toggleLeaderboard() {
+  const div = document.getElementById("leaderboard");
+  const list = document.getElementById("leaderboard-list");
+  div.classList.toggle("show");
+
+  const data = JSON.parse(localStorage.getItem("leaderboard")) || [];
+  const top20 = data.sort((a, b) => b.score - a.score).slice(0, 20);
+
+  list.innerHTML = "";
+
+  top20.forEach((entry, index) => {
+    const item = document.createElement("li");
+    let rankIcon = index === 0 ? "🥇 " : index === 1 ? "🥈 " : index === 2 ? "🥉 " : `${index + 1}. `;
+    item.textContent = `${rankIcon}${entry.name}: ${entry.score}`;
+    list.appendChild(item);
+  });
+}
+
+function flashScreen() {
+  flash.style.opacity = 0.4;
+  setTimeout(() => flash.style.opacity = 0, 100);
+}
+
+function shareScore(score) {
+  const name = localStorage.getItem("playerName") || "Player";
+  const message = `🎯 I just scored ${score} in Smiley Catcher Mania! Can you beat me?\nPlay now! 🕹️`;
+  if (navigator.share) {
+    navigator.share({ title: 'Smiley Catcher', text: message });
+  } else {
+    navigator.clipboard.writeText(message);
+    alert("Score copied to clipboard! Share it with your friends! 🥳");
+  }
+}
+
+updateUI();
+</script>
+
+</body>
+</html>
